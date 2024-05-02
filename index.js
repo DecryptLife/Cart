@@ -3,9 +3,7 @@ const API = (() => {
   const getCart = () => {
     // define your method to get cart data
 
-    fetch(`${URL}/cart`).then((res) => {
-      return res.json();
-    });
+    return fetch(`${URL}/cart`).then((res) => res.json());
   };
 
   const getInventory = () => {
@@ -15,7 +13,7 @@ const API = (() => {
 
   const addToCart = (inventoryItem) => {
     // define your method to add an item to cart
-    return fetch(URL + "cart", {
+    return fetch(`${URL}/cart`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -114,7 +112,6 @@ const View = (() => {
 
   const inventoryListEl = document.querySelector(".inventory__list");
   const cartListEl = document.querySelector(".cart__list");
-
   // const add_btn = document.querySelector(".item__add-btn");
   // const remove_btn = document.querySelector(".item__remove-btn");
 
@@ -143,6 +140,7 @@ const View = (() => {
   };
 
   const renderCart = (cart) => {
+    console.log(cart);
     let cartTemp = "";
 
     cart.forEach((item) => {
@@ -158,7 +156,7 @@ const View = (() => {
     cartListEl.innerHTML = cartTemp;
   };
 
-  return { renderInventory, renderCart, inventoryListEl };
+  return { renderInventory, renderCart, inventoryListEl, cartListEl };
 })();
 
 const Controller = ((model, view) => {
@@ -173,18 +171,48 @@ const Controller = ((model, view) => {
   const handleUpdateAmount = () => {
     view.inventoryListEl.addEventListener("click", (event) => {
       const element = event.target;
+      const id = element.parentElement.getAttribute("id");
+
+      //  try putting countEL in views if possible
+      const countEl = document.getElementById(`count-${id}`);
+      let count = parseInt(countEl.innerText);
 
       if (element.className === "item__add-btn") {
-        const id = element.parentElement.getAttribute("id");
-        console.log(id, "add btn clicked");
+        count += 1;
+        countEl.innerText = count;
       } else if (element.className === "item__remove-btn") {
-        const id = element.parentElement.getAttribute("id");
-        console.log("remove button clicked");
+        if (count >= 1) {
+          count -= 1;
+          countEl.innerText = count;
+        }
       }
     });
   };
 
-  const handleAddToCart = () => {};
+  const handleAddToCart = () => {
+    view.inventoryListEl.addEventListener("click", (event) => {
+      const element = event.target;
+      if (element.className === "add__cart-btn") {
+        const id = element.parentElement.getAttribute("id");
+        const itemContent =
+          event.target.parentElement.querySelector(
+            ".item_name-field"
+          ).innerText;
+        const count = parseInt(
+          document.getElementById(`count-${id}`).innerText
+        );
+        if (count > 0) {
+          const inventoryItem = { id, content: itemContent, count };
+          model.addToCart(inventoryItem).then(() => {
+            model.getCart().then((updatedCart) => {
+              state.cart = updatedCart;
+              console.log(state.cart);
+            });
+          });
+        }
+      }
+    });
+  };
 
   const handleDelete = () => {};
 
@@ -198,6 +226,7 @@ const Controller = ((model, view) => {
     });
 
     handleUpdateAmount();
+    handleAddToCart();
   };
   return {
     bootstrap,
