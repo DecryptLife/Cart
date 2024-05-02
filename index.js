@@ -19,14 +19,14 @@ const API = (() => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(inventoryItem),
-    });
+    }).then((res) => res.json());
   };
 
   const updateCart = (id, newAmount) => {
     // define your method to update an item in cart
     return fetch(`${URL}/cart/${id}`, {
       method: "PUT",
-      header: {
+      headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(newAmount),
@@ -143,7 +143,8 @@ const View = (() => {
 
     cart.forEach((item) => {
       const itemTemp = `<li id=${item.id}>
-      <span>${item.content} x</span>
+      <span>${item.content}</span>
+      <span>x</span>
       <span>${item.count}</span>
       <button class="cart__delete-btn">Delete</button>
     </li>`;
@@ -199,6 +200,7 @@ const Controller = ((model, view) => {
 
   const handleAddToCart = () => {
     view.inventoryListEl.addEventListener("click", (event) => {
+      event.preventDefault();
       const element = event.target;
       if (element.className === "add__cart-btn") {
         const id = element.parentElement.getAttribute("id");
@@ -210,13 +212,38 @@ const Controller = ((model, view) => {
           document.getElementById(`count-${id}`).innerText
         );
         if (count > 0) {
-          const inventoryItem = { id, content: itemContent, count };
-          model.addToCart(inventoryItem).then(() => {
-            model.getCart().then((updatedCart) => {
-              state.cart = updatedCart;
-              console.log(state.cart);
+          //  check if item present in cart
+          console.log("State:", state.cart);
+          console.log(id);
+          const existingCartItemIndex = state.cart.findIndex(
+            (item) => item.id === id
+          );
+
+          console.log("Existing item index: ", existingCartItemIndex);
+          const newCount =
+            (state.cart[existingCartItemIndex]?.count || 0) + count;
+          if (existingCartItemIndex !== -1) {
+            //  update cart
+            console.log("Item exists");
+            const existingItem = state.cart[existingCartItemIndex];
+            const updateditem = {
+              ...existingItem,
+              count: existingItem.count + count,
+            };
+
+            model.updateCart(id, updateditem).then((data) => {
+              state.cart[existingCartItemIndex] = data;
+              state.cart = [...state.cart];
             });
-          });
+          } else {
+            console.log("Item does not exist");
+            const inventoryItem = { id, content: itemContent, count };
+            console.log(inventoryItem);
+            model.addToCart(inventoryItem).then((addedItem) => {
+              console.log(addedItem);
+              state.cart = [...state.cart, addedItem];
+            });
+          }
         }
       }
     });

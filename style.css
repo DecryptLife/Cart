@@ -1,0 +1,59 @@
+#app {
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.top-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+li {
+  list-style-type: none;
+  padding: 1rem;
+  background-color: antiquewhite;
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.item__add-btn {
+  background-color: green;
+  color: white;
+}
+
+.item__remove-btn {
+  background-color: red;
+  color: white;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  background-color: blue;
+  color: white;
+  border-radius: 5px;
+  font-weight: bolder;
+}
+
+.inventory-container,
+.cart-container {
+  width: 40%;
+  text-align: center;
+}
+
+.cart__checkout-btn {
+  width: 70%;
+}
+
+.bottom-container {
+  display: flex;
+  justify-content: center;
+}
