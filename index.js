@@ -35,7 +35,7 @@ const API = (() => {
 
   const deleteFromCart = (id) => {
     // define your method to delete an item in cart
-    return fetch(`${baseUrl}/cart/${id}`, {
+    return fetch(`${URL}/cart/${id}`, {
       method: "DELETE",
     }).then((res) => res.json());
   };
@@ -112,11 +112,7 @@ const View = (() => {
 
   const inventoryListEl = document.querySelector(".inventory__list");
   const cartListEl = document.querySelector(".cart__list");
-  // const add_btn = document.querySelector(".item__add-btn");
-  // const remove_btn = document.querySelector(".item__remove-btn");
 
-  // console.log(add_btn);
-  // console.log(remove_btn);
   const renderInventory = (inventory) => {
     let inventoryTemp = "";
 
@@ -144,10 +140,10 @@ const View = (() => {
     let cartTemp = "";
 
     cart.forEach((item) => {
-      const itemTemp = `<li>
+      const itemTemp = `<li id=${item.id}>
       <span>${item.content} x</span>
       <span>${item.count}</span>
-      <button>Delete</button>
+      <button class="cart__delete-btn">Delete</button>
     </li>`;
 
       cartTemp += itemTemp;
@@ -166,6 +162,10 @@ const Controller = ((model, view) => {
   const init = () => {
     model.getInventory().then((data) => {
       state.inventory = data;
+    });
+
+    model.getCart().then((data) => {
+      state.cart = data;
     });
   };
   const handleUpdateAmount = () => {
@@ -214,7 +214,22 @@ const Controller = ((model, view) => {
     });
   };
 
-  const handleDelete = () => {};
+  const handleDelete = () => {
+    view.cartListEl.addEventListener("click", (event) => {
+      const element = event.target;
+      console.log(element);
+
+      if (element.className === "cart__delete-btn") {
+        const id = element.parentElement.getAttribute("id");
+
+        console.log("id clickedL ; ", id);
+
+        model.deleteFromCart(id).then((data) => {
+          state.cart = state.cart.filter((item) => item.id != id);
+        });
+      }
+    });
+  };
 
   const handleCheckout = () => {};
   const bootstrap = () => {
@@ -227,6 +242,7 @@ const Controller = ((model, view) => {
 
     handleUpdateAmount();
     handleAddToCart();
+    handleDelete();
   };
   return {
     bootstrap,
