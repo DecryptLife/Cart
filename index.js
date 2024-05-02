@@ -113,6 +113,8 @@ const View = (() => {
   const inventoryListEl = document.querySelector(".inventory__list");
   const cartListEl = document.querySelector(".cart__list");
 
+  const checkoutBtn = document.querySelector(".cart__checkout-btn");
+
   const renderInventory = (inventory) => {
     let inventoryTemp = "";
 
@@ -152,7 +154,13 @@ const View = (() => {
     cartListEl.innerHTML = cartTemp;
   };
 
-  return { renderInventory, renderCart, inventoryListEl, cartListEl };
+  return {
+    renderInventory,
+    renderCart,
+    inventoryListEl,
+    cartListEl,
+    checkoutBtn,
+  };
 })();
 
 const Controller = ((model, view) => {
@@ -231,7 +239,13 @@ const Controller = ((model, view) => {
     });
   };
 
-  const handleCheckout = () => {};
+  const handleCheckout = () => {
+    view.checkoutBtn.addEventListener("click", () => {
+      model.checkout().then(() => {
+        state.cart = [];
+      });
+    });
+  };
   const bootstrap = () => {
     init();
 
@@ -243,6 +257,7 @@ const Controller = ((model, view) => {
     handleUpdateAmount();
     handleAddToCart();
     handleDelete();
+    handleCheckout();
   };
   return {
     bootstrap,
