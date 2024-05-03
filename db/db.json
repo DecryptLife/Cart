@@ -3,11 +3,6 @@
     {
       "id": "1",
       "content": "apple",
-      "count": 2
-    },
-    {
-      "id": "2",
-      "content": "peach",
       "count": 4
     }
   ],
@@ -19,6 +14,14 @@
     {
       "content": "peach",
       "id": 2
+    },
+    {
+      "content": "mango",
+      "id": 3
+    },
+    {
+      "content": "orange",
+      "id": 4
     }
   ]
 }

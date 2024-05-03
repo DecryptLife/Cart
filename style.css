@@ -47,6 +47,8 @@ button {
 .cart-container {
   width: 40%;
   text-align: center;
+  display: flex;
+  flex-direction: column;
 }
 
 .cart__checkout-btn {
@@ -56,4 +58,26 @@ button {
 .bottom-container {
   display: flex;
   justify-content: center;
+  margin-top: 1rem;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+}
+
+.pagination-area {
+  display: flex;
+}
+
+.pagination__pages button {
+  padding: 5px 10px;
+  margin-right: 5px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.pagination__pages button:hover {
+  background-color: #e0e0e0;
+  color: blue;
 }

@@ -63,6 +63,7 @@ const Model = (() => {
     #onChange;
     #inventory;
     #cart;
+    #currentIndex = 0;
     constructor() {
       this.#inventory = [];
       this.#cart = [];
@@ -75,6 +76,14 @@ const Model = (() => {
       return this.#inventory;
     }
 
+    get currentIndex() {
+      return this.#currentIndex; // Getter for current page
+    }
+
+    set currentIndex(index) {
+      this.#currentIndex = index;
+      this.#onChange();
+    }
     set cart(newCart) {
       this.#cart = newCart;
       this.#onChange();
@@ -109,32 +118,60 @@ const Model = (() => {
 
 const View = (() => {
   // implement your logic for View
+  const itemsPerPage = 2;
+
+  let currentIndex = 0;
 
   const inventoryListEl = document.querySelector(".inventory__list");
   const cartListEl = document.querySelector(".cart__list");
 
   const checkoutBtn = document.querySelector(".cart__checkout-btn");
 
-  const renderInventory = (inventory) => {
+  const prevBtn = document.querySelector(".pagination__prev-btn");
+
+  const nextBtn = document.querySelector(".pagination__next-btn");
+
+  const paginationEl = document.querySelector(".pagination-area");
+  function renderPage(items, pageIndex) {
     let inventoryTemp = "";
 
-    console.log("V: ", inventory);
+    const start = pageIndex * itemsPerPage;
+    const end = Math.min(items.length, start + itemsPerPage); // stays in bounds
 
-    inventory.forEach((item) => {
-      const itemTemp = ` <li id=${item.id}>
-      <span class="item_name-field">${item.content}</span>
-      <button class="item__remove-btn">-</button>
-      <span class="item_count-field" id="count-${item.id}">${
+    for (let i = start; i < end; i++) {
+      const item = items[i];
+      inventoryTemp += `<li id=${item.id}>
+          <span class="item_name-field">${item.content}</span>
+          <button class="item__remove-btn">-</button>
+          <span class="item_count-field" id="count-${item.id}">${
         item.count || 0
       }</span>
-      <button class="item__add-btn">+</button>
-      <button class="add__cart-btn">Add to Cart</button>
-    </li>`;
-
-      inventoryTemp += itemTemp;
-    });
+          <button class="item__add-btn">+</button>
+          <button class="add__cart-btn">Add to Cart</button>
+        </li>`;
+    }
 
     inventoryListEl.innerHTML = inventoryTemp;
+  }
+
+  const renderInventory = (inventory) => {
+    const pageButtonContainerEl = document.querySelector(".pagination__pages");
+    pageButtonContainerEl.innerHTML = ""; // Clear previous buttons
+
+    const pageNum = Math.ceil(inventory.length / itemsPerPage);
+
+    for (let i = 0; i < pageNum; i++) {
+      let button = document.createElement("button");
+      button.textContent = i + 1;
+      button.className = `pagination-btns`;
+      button.id = `${i + 1}`;
+      button.addEventListener("click", () => renderPage(inventory, i));
+      pageButtonContainerEl.appendChild(button);
+    }
+
+    if (inventory.length > 0) {
+      renderPage(inventory, 0); // Only render the first page initially
+    }
   };
 
   const renderCart = (cart) => {
@@ -161,6 +198,12 @@ const View = (() => {
     inventoryListEl,
     cartListEl,
     checkoutBtn,
+    prevBtn,
+    nextBtn,
+    paginationEl,
+    currentIndex,
+    itemsPerPage,
+    renderPage,
   };
 })();
 
@@ -273,6 +316,23 @@ const Controller = ((model, view) => {
       });
     });
   };
+
+  const handlePagination = () => {
+    view.prevBtn.addEventListener("click", () => {
+      if (state.currentIndex > 0) {
+        state.currentIndex -= 1;
+        view.renderPage(state.inventory, state.currentIndex);
+      }
+    });
+
+    view.nextBtn.addEventListener("click", () => {
+      const maxPage = Math.ceil(state.inventory.length / view.itemsPerPage) - 1;
+      if (state.currentIndex < maxPage) {
+        state.currentIndex += 1;
+        view.renderPage(state.inventory, state.currentIndex);
+      }
+    });
+  };
   const bootstrap = () => {
     init();
 
@@ -285,6 +345,7 @@ const Controller = ((model, view) => {
     handleAddToCart();
     handleDelete();
     handleCheckout();
+    handlePagination();
   };
   return {
     bootstrap,
