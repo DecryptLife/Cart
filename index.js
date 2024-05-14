@@ -25,11 +25,11 @@ const API = (() => {
   const updateCart = (id, newAmount) => {
     // define your method to update an item in cart
     return fetch(`${URL}/cart/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(newAmount),
+      body: JSON.stringify({ count: newAmount }),
     }).then((res) => res.json());
   };
 
@@ -128,10 +128,13 @@ const View = (() => {
   const checkoutBtn = document.querySelector(".cart__checkout-btn");
 
   const prevBtn = document.querySelector(".pagination__prev-btn");
-
   const nextBtn = document.querySelector(".pagination__next-btn");
 
   const paginationEl = document.querySelector(".pagination-area");
+  const paginationPgs = document.querySelector(".pagination__pages");
+
+  const checkoutMsgTxt = document.querySelector(".checkout__message-txt");
+
   function renderPage(items, pageIndex) {
     let inventoryTemp = "";
 
@@ -144,7 +147,7 @@ const View = (() => {
           <span class="item_name-field">${item.content}</span>
           <button class="item__remove-btn">-</button>
           <span class="item_count-field" id="count-${item.id}">${
-        item.count || 0
+        item.amount || 0
       }</span>
           <button class="item__add-btn">+</button>
           <button class="add__cart-btn">Add to Cart</button>
@@ -165,7 +168,7 @@ const View = (() => {
       button.textContent = i + 1;
       button.className = `pagination-btns`;
       button.id = `${i + 1}`;
-      button.addEventListener("click", () => renderPage(inventory, i));
+      // button.addEventListener("click", () => renderPage(inventory, i));
       pageButtonContainerEl.appendChild(button);
     }
 
@@ -175,7 +178,6 @@ const View = (() => {
   };
 
   const renderCart = (cart) => {
-    console.log(cart);
     let cartTemp = "";
 
     cart.forEach((item) => {
@@ -204,6 +206,8 @@ const View = (() => {
     currentIndex,
     itemsPerPage,
     renderPage,
+    paginationPgs,
+    checkoutMsgTxt,
   };
 })();
 
@@ -213,6 +217,9 @@ const Controller = ((model, view) => {
 
   const init = () => {
     model.getInventory().then((data) => {
+      data.forEach((item) => {
+        item.amount = 0;
+      });
       state.inventory = data;
     });
 
@@ -220,23 +227,35 @@ const Controller = ((model, view) => {
       state.cart = data;
     });
   };
+
   const handleUpdateAmount = () => {
     view.inventoryListEl.addEventListener("click", (event) => {
       const element = event.target;
       const id = element.parentElement.getAttribute("id");
+      const classname = element.className;
 
-      //  try putting countEL in views if possible
-      const countEl = document.getElementById(`count-${id}`);
-      let count = parseInt(countEl.innerText);
+      if (classname === "item__add-btn" || classname === "item__remove-btn") {
+        // we have id of the item clicked
+        // after finding increment or decrement we have to updated the item
+        // find if id is valid
+        const oldInventory = state.inventory;
+        const newInventory = oldInventory.map((item) => {
+          if (Number(id) === item.id) {
+            return {
+              ...item,
+              amount: Math.max(
+                0,
+                classname === "item__add-btn"
+                  ? item.amount + 1
+                  : item.amount - 1
+              ),
+            };
+          } else {
+            return item;
+          }
+        });
 
-      if (element.className === "item__add-btn") {
-        count += 1;
-        countEl.innerText = count;
-      } else if (element.className === "item__remove-btn") {
-        if (count >= 1) {
-          count -= 1;
-          countEl.innerText = count;
-        }
+        state.inventory = newInventory;
       }
     });
   };
@@ -251,39 +270,25 @@ const Controller = ((model, view) => {
           event.target.parentElement.querySelector(
             ".item_name-field"
           ).innerText;
-        const count = parseInt(
-          document.getElementById(`count-${id}`).innerText
-        );
+        const item_countEl = document.getElementById(`count-${id}`);
+        const count = parseInt(item_countEl.innerText);
         if (count > 0) {
-          //  check if item present in cart
-          console.log("State:", state.cart);
-          console.log(id);
           const existingCartItemIndex = state.cart.findIndex(
             (item) => item.id === id
           );
 
-          console.log("Existing item index: ", existingCartItemIndex);
-          const newCount =
-            (state.cart[existingCartItemIndex]?.count || 0) + count;
           if (existingCartItemIndex !== -1) {
             //  update cart
-            console.log("Item exists");
             const existingItem = state.cart[existingCartItemIndex];
-            const updateditem = {
-              ...existingItem,
-              count: existingItem.count + count,
-            };
+            const updateditem = existingItem.count + count;
 
             model.updateCart(id, updateditem).then((data) => {
               state.cart[existingCartItemIndex] = data;
               state.cart = [...state.cart];
             });
           } else {
-            console.log("Item does not exist");
             const inventoryItem = { id, content: itemContent, count };
-            console.log(inventoryItem);
             model.addToCart(inventoryItem).then((addedItem) => {
-              console.log(addedItem);
               state.cart = [...state.cart, addedItem];
             });
           }
@@ -295,12 +300,9 @@ const Controller = ((model, view) => {
   const handleDelete = () => {
     view.cartListEl.addEventListener("click", (event) => {
       const element = event.target;
-      console.log(element);
 
       if (element.className === "cart__delete-btn") {
         const id = element.parentElement.getAttribute("id");
-
-        console.log("id clickedL ; ", id);
 
         model.deleteFromCart(id).then((data) => {
           state.cart = state.cart.filter((item) => item.id != id);
@@ -311,25 +313,41 @@ const Controller = ((model, view) => {
 
   const handleCheckout = () => {
     view.checkoutBtn.addEventListener("click", () => {
-      model.checkout().then(() => {
-        state.cart = [];
-      });
+      view.checkoutMsgTxt.style.display = "block";
+      setTimeout(() => {
+        model.checkout().then(() => {
+          state.cart = [];
+          view.checkoutMsgTxt.style.display = "none";
+        });
+      }, 2000);
     });
   };
 
   const handlePagination = () => {
+    const onPageChange = (newIndex) => {
+      state.currentIndex = newIndex;
+      view.renderPage(state.inventory, newIndex);
+    };
     view.prevBtn.addEventListener("click", () => {
       if (state.currentIndex > 0) {
-        state.currentIndex -= 1;
-        view.renderPage(state.inventory, state.currentIndex);
+        onPageChange(state.currentIndex - 1);
       }
     });
 
     view.nextBtn.addEventListener("click", () => {
       const maxPage = Math.ceil(state.inventory.length / view.itemsPerPage) - 1;
+
       if (state.currentIndex < maxPage) {
-        state.currentIndex += 1;
-        view.renderPage(state.inventory, state.currentIndex);
+        onPageChange(state.currentIndex + 1);
+      }
+    });
+
+    view.paginationPgs.addEventListener("click", (event) => {
+      const element = event.target;
+
+      if (element.className === "pagination-btns") {
+        const pageIdx = element.getAttribute("id");
+        onPageChange(pageIdx - 1);
       }
     });
   };

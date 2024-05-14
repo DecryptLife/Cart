@@ -81,3 +81,7 @@ button {
   background-color: #e0e0e0;
   color: blue;
 }
+
+.checkout__message-txt {
+  display: none;
+}
